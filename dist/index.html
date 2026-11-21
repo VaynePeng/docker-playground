@@ -5,65 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="在浏览器里编写 Dockerfile、构建镜像与练习 Docker 命令。">
   <title>Docker Playground</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="stylesheet" href="./style.css">
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
 <header class="masthead">
-  <div class="brand"><span class="mark" aria-hidden="true">▦</span><strong>Docker Playground</strong></div>
-  <div class="header-actions"><span class="environment">模拟环境</span><button id="reset" type="button" class="quiet">重置工作区</button></div>
+  <div class="brand">
+    <img src="./favicon.svg" alt="" width="36" height="36">
+    <h1>Docker Playground</h1>
+  </div>
+  <div class="header-actions">
+    <span class="environment">模拟环境</span>
+    <button id="fullscreen" type="button" class="header-button" aria-label="进入全屏" title="进入全屏" hidden>
+      <svg class="glyph" aria-hidden="true"><use href="./icons.svg#expand"/></svg><span class="header-label">全屏</span>
+    </button>
+    <button id="reset" type="button" class="header-button" aria-label="重置工作区" title="重置工作区">
+      <svg class="glyph" aria-hidden="true"><use href="./icons.svg#reset"/></svg><span class="header-label">重置工作区</span>
+    </button>
+  </div>
 </header>
 <main>
   <div class="workspace">
-    <section class="panel" aria-labelledby="containers-title">
-      <div class="panel-header"><h1 id="containers-title">容器</h1><span id="counts" class="muted"></span></div>
-      <div class="table-wrap">
-        <table><thead><tr><th>名称</th><th>镜像</th><th>状态</th><th>端口</th></tr></thead><tbody id="containers"></tbody></table>
+    <section class="panel containers" aria-labelledby="containers-title">
+      <div class="panel-header">
+        <h2 id="containers-title"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#box"/></svg>容器</h2>
+        <span id="counts" class="muted"></span>
+      </div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="容器列表">
+        <table><thead><tr><th scope="col">名称</th><th scope="col">镜像</th><th scope="col">状态</th><th scope="col">端口</th></tr></thead><tbody id="containers"></tbody></table>
       </div>
     </section>
     <section class="panel editor" aria-label="文件编辑器">
       <aside class="files">
-        <div class="panel-header"><h2>文件</h2><button id="create" class="icon" type="button" aria-label="新建文件或目录" title="新建文件或目录">+</button></div>
+        <div class="panel-header">
+          <h2><svg class="glyph" aria-hidden="true"><use href="./icons.svg#folder"/></svg>文件</h2>
+          <button id="create" class="quiet icon" type="button" aria-label="新建文件或目录" title="新建文件或目录"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#plus"/></svg></button>
+        </div>
         <div id="file-tree" class="file-tree"></div>
-        <div class="file-actions"><button id="rename" class="quiet" type="button">重命名</button><button id="remove" class="quiet" type="button">删除</button></div>
+        <div class="file-actions">
+          <button id="rename" class="quiet" type="button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#edit"/></svg>重命名</button>
+          <button id="remove" class="quiet" type="button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#trash"/></svg>删除</button>
+        </div>
       </aside>
       <div class="editing">
-        <div class="panel-header"><h2 id="filename">Dockerfile</h2><button id="save" class="primary compact" type="button">保存</button></div>
+        <div class="panel-header">
+          <h2 class="file-tab"><svg class="glyph" aria-hidden="true"><use id="file-icon" href="./icons.svg#box"/></svg><span id="filename">Dockerfile</span><span id="unsaved" class="dirty" hidden><span class="sr-only">未保存</span></span></h2>
+          <button id="save" class="primary" type="button" title="保存（Ctrl/Cmd + S）"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#save"/></svg>保存</button>
+        </div>
         <div class="source"><pre id="line-numbers" aria-hidden="true">1</pre><textarea id="text" aria-label="文件内容" spellcheck="false" wrap="off"></textarea></div>
       </div>
     </section>
     <section class="panel terminal" aria-labelledby="terminal-title">
-      <div class="panel-header"><h2 id="terminal-title">终端</h2><button id="clear" class="quiet" type="button">清空</button></div>
+      <div class="panel-header">
+        <h2 id="terminal-title"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#terminal"/></svg>终端</h2>
+        <button id="clear" class="quiet" type="button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#trash"/></svg>清空</button>
+      </div>
       <div id="output" class="output" role="log" tabindex="0" aria-label="终端输出"></div>
       <form id="command-form" autocomplete="off">
-        <span id="prompt" aria-hidden="true"></span><input id="command" aria-label="终端命令" spellcheck="false" placeholder="输入 Docker 命令，按 Enter 执行">
-        <button type="submit" class="quiet">执行</button>
+        <span id="prompt" aria-hidden="true"></span>
+        <input id="command" aria-label="终端命令" spellcheck="false" autocapitalize="off" placeholder="输入命令" title="按 Enter 执行">
+        <button type="submit" class="run-button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#run"/></svg>执行</button>
       </form>
     </section>
   </div>
   <details id="guidance" class="panel guidance" open>
-    <summary>练习与命令速查</summary>
-    <div class="tabs" aria-label="学习工具"><button id="exercise-tab" aria-pressed="true" type="button">练习</button><button id="reference-tab" aria-pressed="false" type="button">命令速查</button></div>
-    <section id="exercise-view" class="guide-body">
-      <label class="muted" for="exercise">选择练习</label>
-      <select id="exercise"></select>
-      <h2 id="exercise-title"></h2>
-      <p id="goal"></p>
-      <ul id="steps"></ul>
-      <button id="check" class="primary wide" type="button">查看检查结果</button>
-      <p id="result" aria-live="polite"></p>
-      <details id="hints"><summary>查看提示</summary><ol id="hint-list"></ol></details>
-      <button id="scenario" class="secondary wide" type="button" hidden>进入独立练习环境</button>
-      <button id="leave" class="secondary wide" type="button" hidden>返回主工作区</button>
-    </section>
-    <section id="reference-view" class="guide-body" hidden>
-      <label class="muted" for="search">搜索命令</label>
-      <input type="search" id="search" placeholder="例如 build、端口">
-      <div id="reference-list"></div>
-    </section>
+    <summary class="guide-summary">
+      <span><svg class="glyph" aria-hidden="true"><use href="./icons.svg#book"/></svg>练习与命令速查</span>
+      <svg class="glyph chevron" aria-hidden="true"><use href="./icons.svg#chevron"/></svg>
+    </summary>
+    <div class="guide-layout">
+      <div class="panel-header guide-heading"><h2><svg class="glyph" aria-hidden="true"><use href="./icons.svg#book"/></svg>练习与命令速查</h2></div>
+      <div class="tabs" role="group" aria-label="学习工具">
+        <button id="exercise-tab" aria-pressed="true" aria-controls="exercise-view" type="button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#task"/></svg>练习</button>
+        <button id="reference-tab" aria-pressed="false" aria-controls="reference-view" type="button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#code"/></svg>命令速查</button>
+      </div>
+      <section id="exercise-view" class="guide-body" aria-labelledby="exercise-title">
+        <div class="field"><label for="exercise">选择练习</label><select id="exercise"></select></div>
+        <div class="exercise-intro"><h3 id="exercise-title"></h3><p id="goal"></p></div>
+        <ul id="steps"></ul>
+        <button id="check" class="primary wide" type="button"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#check"/></svg>查看检查结果</button>
+        <p id="result" aria-live="polite"></p>
+        <details id="hints">
+          <summary><svg class="glyph" aria-hidden="true"><use href="./icons.svg#bulb"/></svg>查看提示<svg class="glyph chevron" aria-hidden="true"><use href="./icons.svg#chevron"/></svg></summary>
+          <ol id="hint-list"></ol>
+        </details>
+        <button id="scenario" class="secondary wide" type="button" hidden>进入独立练习环境</button>
+        <button id="leave" class="secondary wide" type="button" hidden>返回主工作区</button>
+      </section>
+      <section id="reference-view" class="guide-body" aria-label="命令速查" hidden>
+        <div class="field">
+          <label for="search">搜索命令</label>
+          <div class="search-box"><svg class="glyph" aria-hidden="true"><use href="./icons.svg#search"/></svg><input type="search" id="search" placeholder="例如 build、端口"></div>
+        </div>
+        <div id="reference-list"></div>
+      </section>
+    </div>
   </details>
 </main>
-<dialog id="file-dialog">
+<dialog id="file-dialog" aria-labelledby="file-dialog-title">
   <form id="file-form">
     <h2 id="file-dialog-title"></h2>
     <label for="entry-path">路径</label><input id="entry-path" required>
@@ -73,10 +113,10 @@
     <div class="dialog-actions"><button id="cancel-file" class="secondary" type="button">取消</button><button class="primary" type="submit">确认</button></div>
   </form>
 </dialog>
-<dialog id="container-dialog">
+<dialog id="container-dialog" aria-labelledby="container-name">
   <h2 id="container-name"></h2>
   <p id="container-id" class="muted"></p><pre id="container-logs"></pre>
-  <form method="dialog"><button class="secondary" type="submit">关闭</button></form>
+  <form method="dialog" class="dialog-actions"><button class="secondary" type="submit">关闭</button></form>
 </dialog>
 <p id="notice" role="status"></p>
 </body>

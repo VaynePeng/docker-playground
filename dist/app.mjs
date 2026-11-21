@@ -41,6 +41,22 @@ function button(content, action, className) {
   node.addEventListener('click', action);
   return node;
 }
+const iconHref = name => './icons.svg#' + name;
+function glyph(name) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  const use = document.createElementNS(ns, 'use');
+  svg.setAttribute('class', 'glyph');
+  svg.setAttribute('aria-hidden', 'true');
+  use.setAttribute('href', iconHref(name));
+  svg.append(use);
+  return svg;
+}
+function fileIcon(path, entry) {
+  if (entry.type === 'dir') return 'folder';
+  if (labelOf(path) === 'Dockerfile') return 'box';
+  return /\.(html|css|m?js|json)$/i.test(path) ? 'code' : 'file';
+}
 function renderContainers() {
   const { containers } = state();
   text('counts', containers.filter(c => c.running).length + ' 运行中 / ' + containers.length + ' 个容器');
@@ -60,7 +76,12 @@ function renderContainers() {
   });
   if (!rows.length) {
     const row = element('tr');
-    const empty = element('td', '暂无容器。运行 docker run 后，容器会显示在这里。', 'empty');
+    const empty = element('td', undefined, 'empty');
+    const message = element('div', undefined, 'empty-message');
+    const label = element('span', '暂无容器。运行 ');
+    label.append(element('code', 'docker run'), ' 启动容器。');
+    message.append(glyph('box'), label);
+    empty.append(message);
     empty.colSpan = 4;
     row.append(empty);
     rows.push(row);
@@ -80,11 +101,9 @@ function renderFiles() {
     item.dataset.path = path;
     item.title = path;
     const depth = path.split('/').length - 2;
-    item.style.paddingInlineStart = (7 + depth * 12) + 'px';
+    item.style.setProperty('--file-depth', Math.min(depth, 4));
     item.setAttribute('aria-current', String(path === selected));
-    const icon = element('span', files[path].type === 'dir' ? '▸' : '▤');
-    icon.setAttribute('aria-hidden', 'true');
-    item.append(icon, element('span', labelOf(path) + (files[path].type === 'dir' ? '/' : '')));
+    item.append(glyph(fileIcon(path, files[path])), element('span', labelOf(path) + (files[path].type === 'dir' ? '/' : '')));
     return item;
   });
   $('file-tree').replaceChildren(...buttons);
@@ -93,11 +112,14 @@ function renderFiles() {
   $('text').value = file ? state().drafts[selected] ?? files[selected].content : '';
   $('text').placeholder = file ? '' : '选择一个文件开始编辑';
   $('remove').disabled = $('rename').disabled = selected === '/workspace';
+  text('filename', labelOf(selected));
+  $('filename').title = selected;
+  $('file-icon').setAttribute('href', iconHref(fileIcon(selected, files[selected])));
   renderFilename();
 }
 function renderFilename() {
   const dirty = draftExists(selected);
-  text('filename', labelOf(selected) + (dirty ? ' •' : ''));
+  $('unsaved').hidden = !dirty;
   $('save').disabled = !dirty;
   text('line-numbers', $('text').value.split('\n').map((_, index) => index + 1).join('\n'));
   $('line-numbers').scrollTop = $('text').scrollTop;
@@ -110,9 +132,9 @@ function renderExercise() {
   text('goal', exercise.goal);
   $('steps').replaceChildren(...current.map(({ label, done }) => {
     const item = element('li', undefined, done ? 'step done' : 'step');
-    const sign = element('span', done ? '✓' : '○');
-    sign.setAttribute('aria-label', done ? '通过' : '待完成');
-    item.append(sign, element('span', label));
+    const description = element('span');
+    description.append(element('span', done ? '通过：' : '待完成：', 'sr-only'), label);
+    item.append(glyph(done ? 'check' : 'pending'), description);
     return item;
   }));
   $('hint-list').replaceChildren(...exercise.hints.map(hint => element('li', hint)));
@@ -304,6 +326,26 @@ $('reset').addEventListener('click', () => {
   persist();
   notice('工作区已重置。');
 });
+const fullscreen = $('fullscreen');
+if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
+  fullscreen.hidden = false;
+  fullscreen.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch {
+      notice('无法切换全屏，请检查浏览器权限。');
+    }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    const active = Boolean(document.fullscreenElement);
+    const label = active ? '退出全屏' : '进入全屏';
+    fullscreen.setAttribute('aria-label', label);
+    fullscreen.title = label;
+    fullscreen.querySelector('span').textContent = active ? label : '全屏';
+    fullscreen.querySelector('use').setAttribute('href', iconHref(active ? 'collapse' : 'expand'));
+  });
+}
 const narrow = matchMedia('(max-width: 820px)');
 function layout() { $('guidance').open = !narrow.matches; }
 narrow.addEventListener('change', layout);
